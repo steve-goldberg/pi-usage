@@ -1,0 +1,23 @@
+{
+  "name": "pi-plan-usage",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "A compact Pi modal for GLM, Grok and Codex plan usage",
+  "keywords": ["pi-package"],
+  "files": ["src", "README.md", "RESEARCH.md"],
+  "pi": { "extensions": ["./src/index.ts"] },
+  "scripts": {
+    "test": "node --experimental-strip-types --test test/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "check:live": "node --experimental-strip-types scripts/check-live.ts"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*",
+    "@earendil-works/pi-tui": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.9.0"
+  }
+}
