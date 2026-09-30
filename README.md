@@ -93,3 +93,7 @@ Node 22.6+ is needed for test scripts' TypeScript stripping (tested on Node 26.9
 `check:live` prints normalized usage only. `smoke-tui.py` tests isolated Pi processes in regular/fullscreen modes with other extensions disabled, in-memory sessions, live bars, resize, scroll and dismissal. It submits no model prompts.
 
 [RESEARCH.md](RESEARCH.md) records historical third-party extension assessments. [VALIDATION.md](VALIDATION.md) describes the current verification scope.
+
+## License
+
+[MIT](LICENSE) © 2026 Steve Goldberg.
