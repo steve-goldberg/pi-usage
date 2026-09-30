@@ -149,7 +149,7 @@ export class UsageModal {
     }
     const wrapped = content.flatMap(line => wrapTextWithAnsi(line, inner));
     this.contentLength = wrapped.length;
-    this.pageSize = Math.max(1, this.terminalHeight() - 9);
+    this.pageSize = Math.max(1, this.terminalHeight() - 8);
     this.offset = Math.max(0, Math.min(this.offset, Math.max(0, wrapped.length - this.pageSize)));
     const body = wrapped.slice(this.offset, this.offset + this.pageSize);
     const frame = (s: string) => {
@@ -159,10 +159,9 @@ export class UsageModal {
     const scrolling = wrapped.length > this.pageSize ? ` · ${this.offset + 1}–${Math.min(wrapped.length, this.offset + this.pageSize)}/${wrapped.length}` : "";
     const footer = this.hint || (this.loading ? "Checking… · Esc close · ↑↓ scroll" : "R refresh · Esc close · ↑↓ scroll");
     const checked = this.snapshots.flatMap(s => s.fetchedAt === undefined ? [] : [s.fetchedAt]);
-    const checkedText = checked.length ? ` · checked ${new Date(Math.min(...checked)).toLocaleTimeString()}` : "";
+    const checkedText = checked.length ? ` - checked ${new Date(Math.min(...checked)).toLocaleTimeString()}` : "";
     return [this.theme.fg("border", `╭${"─".repeat(w - 2)}╮`),
-      frame(this.theme.bold("PLAN USAGE") + this.theme.fg("dim", " · bars show used")),
-      frame(this.theme.fg("dim", `Provider quotas${checkedText}`)),
+      frame(this.theme.bold("PLAN USAGE") + this.theme.fg("dim", checkedText)),
       frame(""), ...body.map(frame), frame(this.theme.fg("dim", footer + scrolling)),
       this.theme.fg("border", `╰${"─".repeat(w - 2)}╯`)];
   }

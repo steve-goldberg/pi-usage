@@ -20,6 +20,18 @@ function ready(id: ProviderId): Snapshot {
   ] };
 }
 
+test("Header shows checked time inline without redundant descriptions", async () => {
+  const modal = new UsageModal(theme, () => {}, () => 40, () => {}, async id => ({
+    ...ready(id), fetchedAt: now,
+  }), () => now);
+  assert.doesNotMatch(modal.render(84).join("\n"), /checked|bars show used|Provider quotas/);
+  await modal.refresh();
+  const lines = modal.render(84);
+  assert.ok(lines[1].includes(`PLAN USAGE - checked ${new Date(now).toLocaleTimeString()}`));
+  assert.doesNotMatch(lines.join("\n"), /bars show used|Provider quotas/);
+  modal.dispose();
+});
+
 test("Removed credential controls do not open any flow", async () => {
   let closed = 0;
   const modal = new UsageModal(theme, () => {}, () => 40, () => { closed++; }, async id => ready(id));
