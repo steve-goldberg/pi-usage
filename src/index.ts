@@ -6,7 +6,7 @@ export default function planUsage(pi: ExtensionAPI): void {
   const active = new Set<UsageModal>();
   const queryUsage = createUsageQuery();
   pi.registerCommand("usage", {
-    description: "Show GLM, Grok and Codex plan usage",
+    description: "Show GLM, Grok, Codex and OpenCode Go plan usage",
     handler: async (args, ctx) => {
       if (ctx.mode !== "tui") {
         ctx.ui.notify("/usage requires Pi's interactive terminal UI", "info");

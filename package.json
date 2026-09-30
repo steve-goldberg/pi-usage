@@ -10,7 +10,9 @@
   "files": [
     "src",
     "README.md",
-    "RESEARCH.md"
+    "RESEARCH.md",
+    "VALIDATION.md",
+    "docs/images"
   ],
   "pi": {
     "extensions": [

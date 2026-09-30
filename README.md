@@ -2,20 +2,32 @@
 
 A small, read-only **`/usage`** modal for **GLM/Z.ai, Grok, OpenAI Codex, and OpenCode Go**. Shows provider-reported plan consumption, progress bars, reset countdowns, and checked time—not local token/cost estimates.
 
-## Use
+![Pi Plan Usage dashboard showing all four providers with blue usage bars and reset countdowns](docs/images/usage-dashboard.png)
+
+## Install and update
+
+Install globally for your Pi sessions, tracking the repository's default branch:
 
 ```sh
-# Try for one Pi invocation:
-pi -e ./src/index.ts
+pi install git:github.com/steve-goldberg/pi-usage
 
-# Install for this project:
-pi install --local .
-
-# Or install for all Pi sessions:
-pi install /absolute/path/to/pi-pi-usage
+# Pull updates later:
+pi update --extensions
 ```
 
-Run `/reload` after installation or updates, then **`/usage`**. Disable any other extension registering `/usage` to avoid command collisions.
+For a pinned release instead:
+
+```sh
+pi install git:github.com/steve-goldberg/pi-usage@v0.4
+```
+
+Tags are pinned: `pi update --extensions` will not move `@v0.4` to a newer release. Remove the pinned source before switching to the unpinned installation. Add `--local` to install for only the current project.
+
+Run `/reload` after installation or updates, then **`/usage`**. Avoid loading both a local checkout and the GitHub package: they are different package sources and can register duplicate `/usage` commands. Disable any other extension registering `/usage` too.
+
+## Use
+
+Thick bars show **used capacity in darker blue** and **unused capacity in light grey-blue**. Small nonzero usage gets at least one filled cell; the percentage is authoritative. Percentage labels retain warning colors at 70% and error colors at 90%. The header shows the oldest available provider snapshot time inline: `PLAN USAGE - checked …`.
 
 - **R** refresh (60-second cooldown within an open modal)
 - **↑/↓**, **j/k**, **Page Up/Down**, **Home/End** scroll
@@ -49,9 +61,24 @@ Claude integration and its dedicated saved token have been removed at the user's
 - HTTP 429 means rate-limited, **not valid or invalid credentials**. The modal shows the provider's `Retry-After`, or an explicitly labeled five-minute local backoff. That provider's requests are blocked across dashboard opens until the deadline. This state is in-memory within the extension runtime, not shared across processes or preserved after `/reload`.
 - Provider errors, missing auth and unknown schemas remain explicit. Endpoints can change without notice.
 
+## Releases
+
+- **v0.4** — Compact header with inline checked time; removed redundant descriptions.
+- **v0.3** — Thicker, high-contrast blue usage bars; visible small nonzero usage.
+- **v0.2** — OpenCode Go usage support alongside GLM, Grok and Codex.
+- **v0.1** — Initial `/usage` dashboard.
+
 ## Development
 
+From a local checkout (disable any globally installed copy first):
+
 ```sh
+# Try for one Pi invocation:
+pi -e ./src/index.ts
+
+# Or install this checkout for this project:
+pi install --local .
+
 npm install
 npm test
 npm run typecheck
@@ -65,4 +92,4 @@ Node 22.6+ is needed for test scripts' TypeScript stripping (tested on Node 26.9
 
 `check:live` prints normalized usage only. `smoke-tui.py` tests isolated Pi processes in regular/fullscreen modes with other extensions disabled, in-memory sessions, live bars, resize, scroll and dismissal. It submits no model prompts.
 
-`RESEARCH.md` records historical third-party extension assessments. `VALIDATION.md` describes the current verification scope.
+[RESEARCH.md](RESEARCH.md) records historical third-party extension assessments. [VALIDATION.md](VALIDATION.md) describes the current verification scope.
