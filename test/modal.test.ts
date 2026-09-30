@@ -1,9 +1,17 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { visibleWidth } from "@earendil-works/pi-tui";
+import { colorToHex, parseColor, styleText, visibleWidth, type TextStyle } from "@earendil-works/pi-tui";
 import { UsageModal, bar, resetText } from "../src/modal.ts";
 import type { Snapshot, ProviderId } from "../src/usage.ts";
-const theme = { fg: (_color: unknown, text: string) => text, bold: (text: string) => text };
+const theme = {
+  fg: (_color: unknown, text: string) => text,
+  bold: (text: string) => text,
+  style: (text: string) => text,
+};
+const coloredTheme = {
+  ...theme,
+  style: (text: string, options: TextStyle) => styleText(text, options, "truecolor"),
+};
 const now = 1790434000000;
 function ready(id: ProviderId): Snapshot {
   return { id, name: id, status: "ready", plan: "Plan", meters: [
@@ -41,18 +49,54 @@ test("Rate-limit UI distinguishes local backoff from a provider retry instructio
 });
 
 test("Bars distinguish unknown from zero and clamp graphics only", () => {
-  assert.equal(bar(undefined, 10), "░".repeat(10));
-  assert.equal(bar(0, 10), "─".repeat(10));
-  assert.equal(bar(100, 10), "━".repeat(10));
-  assert.equal(bar(150, 10), "━".repeat(10));
-  assert.equal(bar(50, 10), "━━━━━─────");
+  const used = (n: number) => coloredTheme.style("▄".repeat(n), { fg: parseColor("#3975C6") });
+  const unused = (n: number) => coloredTheme.style("▄".repeat(n), { fg: parseColor("#B8C9DF") });
+  for (const percent of [undefined, NaN, Infinity, -Infinity]) {
+    assert.equal(bar(percent, 10, coloredTheme), "░".repeat(10));
+  }
+  assert.equal(bar(0, 10, coloredTheme), unused(10));
+  assert.equal(bar(-10, 10, coloredTheme), unused(10));
+  assert.equal(bar(100, 10, coloredTheme), used(10));
+  assert.equal(bar(150, 10, coloredTheme), used(10));
+  assert.equal(bar(50, 10, coloredTheme), used(5) + unused(5));
+  assert.equal(bar(1, 24, coloredTheme), used(1) + unused(23));
+  assert.equal(bar(0.1, 4, coloredTheme), used(1) + unused(3));
+  for (const width of [0, -1, NaN, Infinity]) {
+    assert.equal(visibleWidth(bar(50, width, coloredTheme)), 1);
+  }
+  assert.equal(visibleWidth(bar(50, 10.9, coloredTheme)), 10);
   assert.equal(resetText(now - 1, now), "reset due · refresh");
   assert.equal(resetText(now + 60000, now), "resets in 1m");
 });
 
+test("Bar colors stay blue while percentage labels retain severity colors", async () => {
+  const styles: string[] = [];
+  const labels: Array<[unknown, string]> = [];
+  const spyTheme = {
+    ...theme,
+    fg: (color: unknown, text: string) => { labels.push([color, text]); return text; },
+    style: (text: string, options: TextStyle) => {
+      styles.push(colorToHex(options.fg!));
+      return coloredTheme.style(text, options);
+    },
+  };
+  const modal = new UsageModal(spyTheme, () => {}, () => 80, () => {}, async id => ({
+    id, name: id, status: "ready", meters: [1, 70, 90, 150, NaN].map(percent => ({ label: "Usage", percent })),
+  }), () => now);
+  await modal.refresh();
+  const screen = modal.render(84).join("\n");
+  assert.deepEqual(new Set(styles), new Set(["#3975c6", "#b8c9df"]));
+  for (const [color, text] of [["success", "1% used"], ["warning", "70% used"],
+    ["error", "90% used"], ["error", "150% used"], ["dim", "not reported"]]) {
+    assert.ok(labels.some(([c, t]) => c === color && t === text));
+  }
+  assert.ok(!screen.includes("NaN"));
+  modal.dispose();
+});
+
 test("Modal fits narrow/wide terminals and stays within viewport after resize", async () => {
   let height = 40;
-  const modal = new UsageModal(theme, () => {}, () => height, () => {}, async id => ready(id), () => now);
+  const modal = new UsageModal(coloredTheme, () => {}, () => height, () => {}, async id => ready(id), () => now);
   await modal.refresh();
   for (const width of [1, 7, 12, 20, 40, 64, 84, 120]) {
     for (const rows of [1, 6, 9, 12, 24, 40]) {

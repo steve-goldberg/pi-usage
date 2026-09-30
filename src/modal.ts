@@ -1,15 +1,20 @@
 import type { Theme } from "@earendil-works/pi-coding-agent";
-import { matchesKey, truncateToWidth, visibleWidth, wrapTextWithAnsi } from "@earendil-works/pi-tui";
+import { matchesKey, parseColor, truncateToWidth, visibleWidth, wrapTextWithAnsi } from "@earendil-works/pi-tui";
 import { providers, type Snapshot, type ProviderId, type Meter, safeText } from "./usage.ts";
 
-type Palette = Pick<Theme, "fg" | "bold">;
+type Palette = Pick<Theme, "fg" | "bold" | "style">;
+const usedColor = parseColor("#3975C6");
+const unusedColor = parseColor("#B8C9DF");
 type Loader = (id: ProviderId, signal: AbortSignal) => Promise<Snapshot>;
 
-export function bar(percent: number | undefined, width: number): string {
-  const n = Math.max(1, Math.floor(width));
-  if (percent === undefined || !Number.isFinite(percent)) return "░".repeat(n);
-  const filled = Math.round(Math.max(0, Math.min(100, percent)) / 100 * n);
-  return "━".repeat(filled) + "─".repeat(n - filled);
+export function bar(percent: number | undefined, width: number, theme: Palette): string {
+  const n = Number.isFinite(width) ? Math.max(1, Math.floor(width)) : 1;
+  if (percent === undefined || !Number.isFinite(percent)) return theme.fg("dim", "░".repeat(n));
+  const clamped = Math.max(0, Math.min(100, percent));
+  // Keep small nonzero usage visible; the adjacent number remains authoritative.
+  const filled = clamped === 0 ? 0 : Math.max(1, Math.round(clamped / 100 * n));
+  return (filled ? theme.style("▄".repeat(filled), { fg: usedColor }) : "")
+    + (filled < n ? theme.style("▄".repeat(n - filled), { fg: unusedColor }) : "");
 }
 export function resetText(at: number | undefined, now: number): string {
   if (at === undefined) return "";
@@ -20,12 +25,12 @@ export function resetText(at: number | undefined, now: number): string {
   return hours < 24 ? `resets in ${hours}h ${mins % 60}m` : `resets in ${Math.floor(hours / 24)}d ${hours % 24}h`;
 }
 function meterLines(m: Meter, width: number, theme: Palette, now: number): string[] {
-  const percent = m.percent;
+  const percent = Number.isFinite(m.percent) ? m.percent : undefined;
   const color = percent === undefined ? "dim" : percent >= 90 ? "error" : percent >= 70 ? "warning" : "success";
   const label = safeText(m.label) || "Usage";
   const percentLabel = percent === undefined ? "not reported" : `${Math.round(percent * 10) / 10}% used`;
   const barWidth = Math.max(4, Math.min(24, width - 18));
-  const line = `${theme.fg(color, bar(percent, barWidth))} ${theme.fg(color, percentLabel)}`;
+  const line = `${bar(percent, barWidth, theme)} ${theme.fg(color, percentLabel)}`;
   const detail = [m.used !== undefined && m.limit !== undefined
     ? `${m.used.toLocaleString()} / ${m.limit.toLocaleString()}${m.unit ? ` ${m.unit}` : ""}` : "",
     resetText(m.resetsAt, now)].filter(Boolean).join(" · ");
