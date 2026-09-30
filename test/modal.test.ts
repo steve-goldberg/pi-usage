@@ -72,7 +72,7 @@ test("All provider results are visible or reachable by keyboard scrolling", asyn
   assert.ok(start.includes("zai"));
   for (let n = 0; n < 50; n++) modal.handleInput("j");
   const end = modal.render(84).join("\n");
-  assert.ok(end.includes("openai-codex"));
+  assert.ok(end.includes("opencode-go"));
   assert.notEqual(start, end);
   modal.dispose();
 });
@@ -112,9 +112,9 @@ test("Refresh is bounded, failures remain separate and never show fake bars", as
     calls++; if (id === "zai") throw new Error("secret"); return ready(id);
   }, () => clock);
   await modal.refresh(); await modal.refresh();
-  assert.equal(calls, 3);
+  assert.equal(calls, 4);
   assert.match(modal.render(84).join("\n"), /Refresh available in/);
   assert.ok(!modal.render(84).join("\n").includes("secret"));
-  clock += 60001; await modal.refresh(); assert.equal(calls, 6);
+  clock += 60001; await modal.refresh(); assert.equal(calls, 8);
   modal.dispose();
 });

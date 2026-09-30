@@ -1,6 +1,15 @@
 # Historical research and implementation evidence
 
-This records the original investigation. Current scope is GLM, Grok and Codex only. Claude support, token input and dedicated Keychain credential were subsequently removed at the user's request; historical Claude references below do not describe current features.
+This records the original investigation. Current scope is GLM, Grok, Codex and OpenCode Go. Claude support, token input and dedicated Keychain credential were subsequently removed at the user's request; historical Claude references below do not describe current features.
+
+## OpenCode Go integration (2026-09-30)
+
+- Verified `GET https://opencode.ai/zen/go/v1/usage` with Pi's `getProviderAuth("opencode-go")` API key and `Authorization: Bearer …`: HTTP 200, three usage windows with percentages and ISO reset timestamps.
+- Upstream source: https://github.com/anomalyco/opencode/blob/2fa3363c924c5c3e367b84a87ae478296a0ed59b/packages/console/app/src/routes/zen/go/v1/usage.ts
+- Response: `usage.{rolling,weekly,monthly}.{status,percent,resetsAt}`. Window statuses are `ok` or `rate-limited`; HTTP 429 remains a separate request-throttling error.
+- Parser uses reported percentages directly, preserves zero, skips absent windows and rejects malformed reported windows. No inferred dollar limits, plan tier, paid overage or local token estimates.
+- Older issue discussions describing a proposed endpoint or cookie workaround are superseded by the shipped route and successful authenticated check. No browser cookies, separate credential storage or external CLI authentication required.
+- Initial live observation: rolling 0%, weekly 2%, monthly 1%. These are snapshots, not fixed quotas.
 
 ## Requested temporary repository reviews
 

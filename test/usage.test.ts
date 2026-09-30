@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { providers, parseCodex, parseGrok, parseZai, number, timestamp, safeText } from "../src/usage.ts";
+import { providers, parseCodex, parseGrok, parseZai, parseOpenCodeGo, number, timestamp, safeText } from "../src/usage.ts";
 
 test("Codex parses all reported windows without inventing a missing primary", () => {
   const result = parseCodex({ plan_type: "pro", rate_limit: { primary_window: null,
@@ -13,8 +13,8 @@ test("Codex parses all reported windows without inventing a missing primary", ()
   assert.equal(result.plan, "pro");
 });
 
-test("Provider list contains only GLM, Grok and Codex", () => {
-  assert.deepEqual(providers.map(p => p.id), ["zai", "xai", "openai-codex"]);
+test("Provider list contains GLM, Grok, Codex and OpenCode Go", () => {
+  assert.deepEqual(providers.map(p => p.id), ["zai", "xai", "openai-codex", "opencode-go"]);
 });
 
 test("GLM handles percentage-only quotas and exact credit ratios", () => {
@@ -45,10 +45,38 @@ test("Grok absent percentage is unknown, never zero", () => {
 });
 
 test("Malformed responses fail safely", () => {
-  for (const parse of [parseCodex, parseGrok, parseZai]) {
+  for (const parse of [parseCodex, parseGrok, parseZai, parseOpenCodeGo]) {
     for (const bad of [null, [], "secret-error", {}, { error: "denied" }]) assert.throws(() => parse(bad));
   }
   assert.throws(() => parseZai({ success: false, data: { limits: [{ type: "TOKENS_LIMIT", percentage: 99 }] } }));
+});
+
+test("OpenCode Go parses zero, partial and exhausted windows without inventing limits", () => {
+  const resetsAt = "2026-10-01T00:00:00.000Z";
+  const result = parseOpenCodeGo({ usage: {
+    rolling: { status: "ok", percent: 0, resetsAt },
+    weekly: { status: "ok", percent: 2.5, resetsAt },
+    monthly: { status: "rate-limited", percent: 100, resetsAt },
+  } });
+  assert.deepEqual(result.meters, [
+    { label: "5 hour", percent: 0, resetsAt: Date.parse(resetsAt) },
+    { label: "7 day", percent: 2.5, resetsAt: Date.parse(resetsAt) },
+    { label: "Monthly", percent: 100, resetsAt: Date.parse(resetsAt) },
+  ]);
+  assert.equal(result.plan, undefined);
+  assert.equal(parseOpenCodeGo({ usage: { weekly: { status: "ok", percent: 2, resetsAt } } }).meters.length, 1);
+});
+
+test("OpenCode Go rejects malformed windows rather than showing zero", () => {
+  const valid = { status: "ok", percent: 0, resetsAt: "2026-10-01T00:00:00Z" };
+  for (const patch of [
+    { percent: undefined }, { percent: null }, { percent: "0" }, { percent: -1 },
+    { percent: 101 }, { percent: Infinity }, { percent: NaN },
+    { status: "unknown" }, { resetsAt: "invalid" }, { resetsAt: undefined },
+  ]) assert.throws(() => parseOpenCodeGo({ usage: { rolling: { ...valid, ...patch } } }));
+  for (const usage of [{}, { rolling: null }, { rolling: [] }, { rolling: "secret" }]) {
+    assert.throws(() => parseOpenCodeGo({ usage }));
+  }
 });
 
 test("Numeric parsing rejects null, empty, booleans, non-finite and negative values", () => {

@@ -1,6 +1,6 @@
 # Pi Plan Usage
 
-A small, read-only **`/usage`** modal for **GLM/Z.ai, Grok, and OpenAI Codex**. Shows provider-reported plan consumption, progress bars, reset countdowns, and checked time—not local token/cost estimates.
+A small, read-only **`/usage`** modal for **GLM/Z.ai, Grok, OpenAI Codex, and OpenCode Go**. Shows provider-reported plan consumption, progress bars, reset countdowns, and checked time—not local token/cost estimates.
 
 ## Use
 
@@ -32,8 +32,9 @@ Uses `ctx.modelRegistry.getProviderAuth(provider)`. Pi manages credentials and O
 | GLM | `zai` | Z.ai coding-plan API key | Z.ai quota monitor |
 | Grok | `xai` | Grok subscription OAuth | Grok CLI credits billing API |
 | OpenAI | `openai-codex` | ChatGPT/Codex OAuth | ChatGPT usage API |
+| OpenCode Go | `opencode-go` | OpenCode API key with Go subscription | OpenCode Go usage API |
 
-All three have been verified live using this machine's Pi auth. Custom aliases/proxies, header-only auth, regional GLM services, ordinary OpenAI API billing, and xAI management/team billing are not supported.
+All four have been verified live using this machine's Pi auth. OpenCode Go reports rolling (5-hour), weekly and monthly percentages and reset times; no dollar limits or plan tier are inferred. It uses only `opencode-go` auth, with no fallback to another provider or browser cookies. Custom aliases/proxies, header-only auth, regional GLM services, ordinary OpenAI API billing, and xAI management/team billing are not supported.
 
 Only reported windows appear. Codex may omit a 5-hour window; providers may return percentages without absolute token/credit limits. No limits are inferred from model context size or local token counts. Grok's shared pool can include usage outside coding/Pi. Paid extra usage is labeled separately. An absent percentage is **not reported**, never zero.
 

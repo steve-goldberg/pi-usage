@@ -52,7 +52,7 @@ def smoke(mode):
         screen = text()
         assert "PLAN USAGE" in screen, "Dashboard did not open"
         assert "Claude" not in screen, "Removed provider still appears"
-        for label in ["GLM", "Grok", "Codex"]:
+        for label in ["GLM", "Grok", "Codex", "OpenCode"]:
             assert label in screen, f"Provider missing: {label}"
         assert "% used" in screen, "No live usage bars rendered"
         # Narrow resize, keyboard navigation and dismissal must not crash Pi.
@@ -65,7 +65,7 @@ def smoke(mode):
         receive(0.5)
         assert process.poll() is None, "Pi crashed during resize or dismissal"
         assert "Failed to load extension" not in text(), "Extension load error"
-        print(f"PASS {mode}: live modal/bars, three providers, no removed-provider controls, resize, scroll, Escape")
+        print(f"PASS {mode}: live modal/bars, four providers, no removed-provider controls, resize, scroll, Escape")
     finally:
         process.terminate()
         try:

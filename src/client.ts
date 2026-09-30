@@ -1,4 +1,4 @@
-import { parseCodex, parseGrok, parseZai, providers, record, type ProviderId, type Snapshot } from "./usage.ts";
+import { parseCodex, parseGrok, parseZai, parseOpenCodeGo, providers, record, type ProviderId, type Snapshot } from "./usage.ts";
 
 // The caller resolves credentials; no credential cache here.
 export interface AuthResolver {
@@ -8,8 +8,9 @@ export const endpoints: Record<ProviderId, string> = {
   zai: "https://api.z.ai/api/monitor/usage/quota/limit",
   xai: "https://cli-chat-proxy.grok.com/v1/billing?format=credits",
   "openai-codex": "https://chatgpt.com/backend-api/wham/usage",
+  "opencode-go": "https://opencode.ai/zen/go/v1/usage",
 };
-const parsers = { zai: parseZai, xai: parseGrok, "openai-codex": parseCodex };
+const parsers = { zai: parseZai, xai: parseGrok, "openai-codex": parseCodex, "opencode-go": parseOpenCodeGo };
 
 /** HTTP Retry-After is either seconds or an HTTP date, not a quota reset. */
 export function retryAfterAt(value: string | null, now = Date.now()): number | undefined {

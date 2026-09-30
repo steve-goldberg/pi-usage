@@ -75,6 +75,7 @@ test("Provider-specific credentials are resolved on each request and use fixed e
     zai: { success: true, data: { limits: [{ type: "TOKENS_LIMIT", percentage: 5 }] } },
     xai: { config: { creditUsagePercent: 5 } },
     "openai-codex": { rate_limit: { primary_window: { used_percent: 5 } } },
+    "opencode-go": { usage: { rolling: { status: "ok", percent: 5, resetsAt: "2026-10-01T00:00:00Z" } } },
   };
   const resolved: string[] = [];
   for (const id of Object.keys(fixtures) as ProviderId[]) {
@@ -94,6 +95,24 @@ test("Provider-specific credentials are resolved on each request and use fixed e
     assert.ok(r.fetchedAt);
   }
   assert.deepEqual(resolved, Object.keys(fixtures));
+});
+
+test("OpenCode Go uses only its own Pi auth and the verified usage endpoint", async () => {
+  assert.equal(endpoints["opencode-go"], "https://opencode.ai/zen/go/v1/usage");
+  const missing = await fetchUsage("opencode-go", { getProviderAuth: async id => {
+    assert.equal(id, "opencode-go"); return undefined;
+  } }, signal(), async () => { assert.fail("No request without Go auth"); });
+  assert.equal(missing.status, "missing");
+  for (const status of [401, 403, 429, 500]) {
+    const result = await fetchUsage("opencode-go", auth, signal(), response({ error: "test-secret" }, status));
+    assert.equal(result.status, "error");
+    assert.equal(result.httpStatus, status);
+    assert.deepEqual(result.meters, []);
+    assert.ok(!JSON.stringify(result).includes("test-secret"));
+  }
+  const malformed = await fetchUsage("opencode-go", auth, signal(), response({ usage: {} }));
+  assert.equal(malformed.status, "error");
+  assert.match(malformed.note!, /format not recognized/);
 });
 
 test("Codex gets account id from the same resolved token", async () => {

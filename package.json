@@ -1,9 +1,9 @@
 {
   "name": "pi-plan-usage",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
-  "description": "A compact Pi modal for GLM, Grok and Codex plan usage",
+  "description": "A compact Pi modal for GLM, Grok, Codex and OpenCode Go plan usage",
   "keywords": ["pi-package"],
   "files": ["src", "README.md", "RESEARCH.md"],
   "pi": { "extensions": ["./src/index.ts"] },

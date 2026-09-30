@@ -1,8 +1,9 @@
-export type ProviderId = "zai" | "xai" | "openai-codex";
+export type ProviderId = "zai" | "xai" | "openai-codex" | "opencode-go";
 export const providers: ReadonlyArray<{ id: ProviderId; name: string }> = [
   { id: "zai", name: "GLM · Z.ai" },
   { id: "xai", name: "Grok" },
   { id: "openai-codex", name: "OpenAI · Codex" },
+  { id: "opencode-go", name: "OpenCode · Go" },
 ];
 export interface Meter {
   label: string;
@@ -104,6 +105,23 @@ export function parseZai(payload: unknown): Usage {
       percent, used, limit, unit, resetsAt: timestamp(w.nextResetTime) });
   }
   return requireMeters({ plan: safeText(data.level), meters });
+}
+
+export function parseOpenCodeGo(payload: unknown): Usage {
+  const usage = record(record(payload).usage);
+  const meters: Meter[] = [];
+  for (const [key, label] of [["rolling", "5 hour"], ["weekly", "7 day"], ["monthly", "Monthly"]]) {
+    if (usage[key] === undefined || usage[key] === null) continue;
+    const w = record(usage[key]);
+    const percent = typeof w.percent === "number" ? number(w.percent) : undefined;
+    const resetsAt = typeof w.resetsAt === "string" ? timestamp(w.resetsAt) : undefined;
+    if ((w.status !== "ok" && w.status !== "rate-limited") || percent === undefined || percent > 100 || resetsAt === undefined) {
+      throw new Error("schema");
+    }
+    // Use the reported percentage, not HTTP throttling or inferred dollar limits.
+    meters.push({ label, percent, resetsAt });
+  }
+  return requireMeters({ meters });
 }
 
 export function parseGrok(payload: unknown): Usage {
